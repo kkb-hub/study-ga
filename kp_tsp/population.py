@@ -82,10 +82,13 @@ class Population:
                 child.gene.append(parent2.gene[i])
 
         # 残りの遺伝子を長い親から受け継ぐ
-        if len(parent1.gene) > min_length:
-            child.gene.extend(parent1.gene[min_length:])
-        elif len(parent2.gene) > min_length:
-            child.gene.extend(parent2.gene[min_length:])
+        # ただし、1/2の確率とする。確率を決めないと遺伝子が無限に伸びるため。
+        if random.random() < 0.01:
+            if len(parent1.gene) > min_length:
+                child.gene.extend(parent1.gene[min_length:])
+            elif len(parent2.gene) > min_length:
+                child.gene.extend(parent2.gene[min_length:])
+                
         return child
     
     def mutate(self, mutation_rate):
@@ -99,6 +102,7 @@ class Population:
         """
         for individual in self.individuals:
             individual.mutate(mutation_rate)
+            individual.shave_gene()
 
     def generate_new_population(self, crossover_rate):
         """

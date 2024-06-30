@@ -3,10 +3,6 @@ import random
 
 if __name__ == '__main__':
 
-    # 1000個のItemインスタンスを生成
-    # item_list = [Item(id=i, weight=random.randint(1, 10), 
-    #               value=random.randint(1, 10)) for i in range(1, 1001)]
-
     # 10個のLocationインスタンスを生成
     location_list = [
         Location(
@@ -28,5 +24,5 @@ if __name__ == '__main__':
     num_locations = len(location_list)
 
     from .genetic_algorithm import GeneticAlgorithm
-    ins = GeneticAlgorithm(1000, num_locations, 1000)
+    ins = GeneticAlgorithm(5000, num_locations, 1000)
     ins.run(location_list, 20)

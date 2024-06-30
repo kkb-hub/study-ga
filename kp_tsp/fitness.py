@@ -8,7 +8,7 @@ def _calculate_distance(p1, p2):
     """
     return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
 
-def calculate_fitness(gene: list[tuple[int, int]], locations: list[Location], max_weight: int) -> float:
+def calculate_fitness(gene: list[tuple[int, int]], locations: list[Location], max_weight: int) -> tuple[float, float, int]:
     """
     適応度計算
     (将来クラス化してLocationとmax weightを固定したい)
@@ -47,9 +47,9 @@ def calculate_fitness(gene: list[tuple[int, int]], locations: list[Location], ma
             current_position = location.coordinates
         else:
             # 重量オーバーの場合、ペナルティとして適応度を下げる
-            return 0
+            return 0.0, total_distance, 0
 
     # 適応度の計算。価値を最大化し、距離を最小化したいので、価値を距離で割る
     if total_distance > 0:
-        return total_value / total_distance
-    return 0
+        return total_value / (total_distance/100), total_distance, total_value
+    return 0.0, total_distance, total_value

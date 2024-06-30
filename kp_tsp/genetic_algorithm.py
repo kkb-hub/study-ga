@@ -2,14 +2,20 @@ from .population import Population
 
 class GeneticAlgorithm:
     """
-    遺伝的アルゴリズムを利用して最適化問題を解くためのクラスです。
-    このクラスは個体群の進化プロセスを制御し、各世代において個体群の評価、選択、交叉、突然変異を行いながら最適な解を探求します。
-    属性:
-    population: 現在の個体群を保持します。
-    generations: 世代数をカウントします。
-    max_generations: 最大世代数です。
-    メソッド:
-    run(): アルゴリズムを実行し、最適な解を見つけます。各世代において、個体群の評価、選択、交叉、突然変異を行います。
+    遺伝的アルゴリズムを動作させるクラス
+    
+    Attributes
+    ----------
+    population : Population
+        現在の世代の個体群
+    max_generations: int
+        アルゴリズムの最大世代数
+    crossover_rate : float
+        選ばれた親のペアが交叉を行う確率
+    mutation_rate : float
+        突然変異の確率
+    current_generation : int
+        現在の世代数
     """
     def __init__(self, population_size, num_place, max_generations, crossover_rate = 0.8, mutation_rate = 0.02):
         self.population = Population(population_size, num_place)
@@ -24,7 +30,8 @@ class GeneticAlgorithm:
 
         # 最大世代数に達するまで進化を続ける
         while self.current_generation < self.max_generations:
-            print(f"Gen. {self.current_generation}: Best Fitness = {self.get_best_fitness():.6f}")
+            # print(f"Gen. {self.current_generation}: Best Fitness = {self.get_best_fitness():.6f}")
+            print(f"Gen. {self.current_generation}- Best Fitness: {self.get_best_individual().fitness:.6f}, dist: {self.get_best_individual().total_dist: .0f}, value: {self.get_best_individual().total_value}")
             self.population.generate_new_population(self.crossover_rate)
             self.population.evaluate(locations, max_weight)
             self.current_generation += 1

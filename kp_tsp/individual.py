@@ -32,6 +32,8 @@ class Individual:
         else:
             self.gene = self.initialize_gene(max_place)
         self.fitness: float = 0
+        self.total_dist: float = 0
+        self.total_value: int = 0
         
     def initialize_gene(self, max_place: int) -> gene_type:
         """
@@ -69,7 +71,7 @@ class Individual:
         max_weigth : int
             ナップサックの許容値
         """
-        self.fitness = calculate_fitness(self.gene, locations, max_weight)
+        self.fitness, self.total_dist, self.total_value = calculate_fitness(self.gene, locations, max_weight)
 
     def mutate(self, locations: list[Location], mutation_rate: float=0.02):
         """
@@ -103,6 +105,20 @@ class Individual:
                 else:
                     # 使用可能な拠点がない場合は、変異をスキップ
                     continue
+        
+        # 遺伝子の数を半分にする
+        # どこかで半分にしないと遺伝子長が無限に伸びるため
+        half_size = len(new_gene) // 2
+        new_gene = random.sample(new_gene, half_size)
 
         self.gene = new_gene
+    
+    def shave_gene(self, shave_ratio = 0.2):
+        """
+        ランダムに遺伝子の要素を削除する
+        """
+        if random.random() <= shave_ratio:
+            half_size = len(self.gene) // 2
+            self.gene = random.sample(self.gene, half_size)
+
         
