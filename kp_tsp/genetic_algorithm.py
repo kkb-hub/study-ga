@@ -11,8 +11,8 @@ class GeneticAlgorithm:
     メソッド:
     run(): アルゴリズムを実行し、最適な解を見つけます。各世代において、個体群の評価、選択、交叉、突然変異を行います。
     """
-    def __init__(self, population_size, gene_length, max_generations, crossover_rate, mutation_rate):
-        self.population = Population(population_size, gene_length)
+    def __init__(self, population_size, num_place, max_generations, crossover_rate = 0.8, mutation_rate = 0.02):
+        self.population = Population(population_size, num_place)
         self.max_generations = max_generations
         self.crossover_rate = crossover_rate
         self.mutation_rate = mutation_rate
@@ -24,7 +24,7 @@ class GeneticAlgorithm:
 
         # 最大世代数に達するまで進化を続ける
         while self.current_generation < self.max_generations:
-            print(f"Generation {self.current_generation}: Best Fitness = {self.get_best_fitness()}")
+            print(f"Gen. {self.current_generation}: Best Fitness = {self.get_best_fitness():.6f}")
             self.population.generate_new_population(self.crossover_rate)
             self.population.evaluate(locations, max_weight)
             self.current_generation += 1
