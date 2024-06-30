@@ -1,7 +1,7 @@
 import pytest
 
 from kp_tsp.environment_models import Item, Location
-from kp_tsp.fitness import calculate_distance, calculate_fitness
+from kp_tsp.fitness import _calculate_distance, calculate_fitness
 
 @pytest.fixture
 def mock_locations():
@@ -16,7 +16,7 @@ def test_calculate_distance():
     point1 = (100, 200)
     point2 = (200, 300)
     expected_distance = 141.4213562373095  # sqrt((200-100)^2 + (300-200)^2)
-    calculated_distance = calculate_distance(point1, point2)
+    calculated_distance = _calculate_distance(point1, point2)
     assert calculated_distance == pytest.approx(expected_distance), "Distance calculation should be correct"
 
 # 適応度計算

@@ -1,27 +1,52 @@
 import random
 
+from kp_tsp.environment_models import Location
 from .fitness import calculate_fitness
 
 gene_type = list[tuple[int, int]]
 
 class Individual:
+    """
+    遺伝子の情報と適応度計算、突然変異の関数を保持する
 
-    def __init__(self, max_place: int | None = None) -> None:
+    Attributes
+    ----------
+    gene : gene_type
+       遺伝子本体
+    fitness : float
+        この遺伝子の適応度
+    """
+
+    def __init__(self, max_place: int = -1) -> None:
         """
-        染色体クラスの初期化
-        : praram max_place: 拠点数
+        遺伝子のインスタンス化。
+        max_placeが入力されない場合は、インスタンス化したのちにgeneを後から入れることを想定する。
+
+        Parameters
+        ----------
+        max_place : int
+            拠点数
         """
-        if max_place == None:
+        if max_place == -1:
             self.gene: gene_type = []
         else:
             self.gene = self.initialize_gene(max_place)
         self.fitness: float = 0
         
-    def initialize_gene(self, max_place) -> gene_type:
+    def initialize_gene(self, max_place: int) -> gene_type:
         """
         遺伝子の初期化
         遺伝子のサイズは拠点数の1/4から1/2の範囲でランダムに選ばれる。
-        : return : 初期化された遺伝子
+
+        Parameters
+        ----------
+        max_place : int
+            拠点数
+
+        Returns
+        -------
+        遺伝子 : gene_type
+            初期化された遺伝子
         """
         gene_size = random.randint(max_place // 4, max_place // 2)
 
@@ -33,19 +58,31 @@ class Individual:
 
         return list(zip(visit, item))
     
-    def evaluate_fitness(self, locations, max_weight):
+    def evaluate_fitness(self, locations: list[Location], max_weight: int):
+        """
+        適応度計算
+
+        Parameters
+        ----------
+        location : list[Locations]
+            拠点数
+        max_weigth : int
+            ナップサックの許容値
+        """
         self.fitness = calculate_fitness(self.gene, locations, max_weight)
 
-    def mutate(self, locations, mutation_rate=0.02):
-        """遺伝子の変異を行う関数
-    
-        Args:
-            gene (list[tuple[int, int]]): 現在の遺伝子。
-            locations (list[Location]): 利用可能な拠点とアイテムのリスト。
-            mutation_rate (float): 各要素に対する変異の確率。
-            
-        Returns:
-            list[tuple[int, int]]: 変異後の遺伝子。
+    def mutate(self, locations: list[Location], mutation_rate: float=0.02):
+        """
+        遺伝子の突然変異を行う
+
+        Parameters
+        ----------
+        gene : gene_type
+            現在の遺伝子
+        locations : list[Location]
+            拠点とアイテムのリスト
+        mutation_rate: float
+            各要素に対する変異の確率
         """
         new_gene = self.gene.copy()
         used_locations = {loc_id for loc_id, _ in self.gene}  # 現在遺伝子に使われている拠点IDのセット
