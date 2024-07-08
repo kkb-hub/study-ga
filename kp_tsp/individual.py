@@ -1,9 +1,9 @@
 import random
+import math
 
 from kp_tsp.environment_models import Location
-from .fitness import calculate_fitness
 
-gene_type = list[tuple[int, int]]
+gene_type = list[tuple[bool, int, int]]
 
 class Individual:
     """
@@ -17,32 +17,37 @@ class Individual:
         この遺伝子の適応度
     """
 
-    def __init__(self, max_place: int = -1) -> None:
+    def __init__(self, num_place: int = -1) -> None:
         """
         遺伝子のインスタンス化。
-        max_placeが入力されない場合は、インスタンス化したのちにgeneを後から入れることを想定する。
+        num_placeが入力されない場合は、インスタンス化したのちにgeneを後から入れることを想定する。
 
         Parameters
         ----------
-        max_place : int
+        num_place : int
             拠点数
         """
-        if max_place == -1:
+        if num_place == -1:
             self.gene: gene_type = []
         else:
-            self.gene = self.initialize_gene(max_place)
+            self.gene = self.initialize_gene(num_place)
+
         self.fitness: float = 0
         self.total_dist: float = 0
         self.total_value: int = 0
+        self.total_weight: int = 0
+
+        self.normalized_dist: float = 0
+        self.normalized_value: float = 0
+        self.normalized_weight: float = 0
         
-    def initialize_gene(self, max_place: int) -> gene_type:
+    def initialize_gene(self, num_place: int) -> gene_type:
         """
         遺伝子の初期化
-        遺伝子のサイズは拠点数の1/4から1/2の範囲でランダムに選ばれる。
 
         Parameters
         ----------
-        max_place : int
+        num_place : int
             拠点数
 
         Returns
@@ -50,30 +55,59 @@ class Individual:
         遺伝子 : gene_type
             初期化された遺伝子
         """
-        gene_size = random.randint(max_place // 4, max_place // 2)
-
-        # 1からmax_placeまでの範囲で重複のないランダムな数字を生成
-        visit = random.sample(range(1, max_place + 1), gene_size)
+        # 1からnum_placeまでの範囲で重複のないランダムな数字を生成
+        visit = random.sample(range(1, num_place + 1), num_place)
 
         # 1から5までのランダムな数字を生成
-        item = [random.randint(1, 5) for _ in range(gene_size)]
+        item = [random.randint(1, 5) for _ in range(num_place)]
 
-        return list(zip(visit, item))
+        is_visited = [random.choice([True, False]) for _ in range(num_place)]
+
+        return list(zip(is_visited, visit, item))
     
-    def evaluate_fitness(self, locations: list[Location], max_weight: int):
+    def _calculate_distance(self, p1: tuple[int, int], p2: tuple[int, int]) -> float:
         """
-        適応度計算
+        ユークリッド距離を計算するヘルパー関数
+        """
+        return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
+    
+    def calc_total(self, locations: list[Location]):
+        """
+        各種のTotal計算
+        fitness計算はpopulationに委譲
 
         Parameters
         ----------
         location : list[Locations]
             拠点数
-        max_weigth : int
-            ナップサックの許容値
         """
-        self.fitness, self.total_dist, self.total_value = calculate_fitness(self.gene, locations, max_weight)
 
-    def mutate(self, locations: list[Location], mutation_rate: float=0.02):
+        total_value = 0
+        total_weight = 0
+        total_distance = 0.0
+        current_position = (0, 0)  # 初期位置を(0,0)とする
+
+        # 遺伝子に含まれる各タプルを解析して価値と距離を計算
+        for is_visited, loc_id, item_id in self.gene:
+            location = next(loc for loc in locations if loc.id == loc_id)
+            item = next(item for item in location.items if item.id == item_id)
+
+            if is_visited:
+                # アイテムの重さと価値を加算
+                total_weight += item.weight
+                total_value += item.value
+
+                # 拠点間の移動距離を加算
+                total_distance += self._calculate_distance(current_position, location.coordinates)
+                current_position = location.coordinates
+
+        # 適応度の計算。価値を最大化し、距離を最小化したいので、価値を距離で割る
+        if total_distance > 0 and total_value > 0:
+            self.total_dist = total_distance
+            self.total_value = total_value
+            self.total_weight = total_weight
+
+    def mutate(self, mutation_rate: float):
         """
         遺伝子の突然変異を行う
 
@@ -87,38 +121,10 @@ class Individual:
             各要素に対する変異の確率
         """
         new_gene = self.gene.copy()
-        used_locations = {loc_id for loc_id, _ in self.gene}  # 現在遺伝子に使われている拠点IDのセット
-        
-        for i in range(len(new_gene)):
+        for i in range(len(self.gene)):
             if random.random() <= mutation_rate:
-                # 使用されていない拠点のリストを作成
-                available_locations = [loc for loc in locations if loc.id not in used_locations]
-                
-                if available_locations:
-                    # 使用されていない拠点からランダムに選択
-                    location = random.choice(available_locations)
-                    # 選択した拠点のアイテムからランダムに一つ選ぶ
-                    item = random.choice(location.items)
-                    # 遺伝子の該当部分を新しい拠点IDとアイテムIDに置き換える
-                    new_gene[i] = (location.id, item.id)
-                    used_locations.add(location.id)  # 更新された拠点を追加
-                else:
-                    # 使用可能な拠点がない場合は、変異をスキップ
-                    continue
-        
-        # 遺伝子の数を半分にする
-        # どこかで半分にしないと遺伝子長が無限に伸びるため
-        half_size = len(new_gene) // 2
-        new_gene = random.sample(new_gene, half_size)
-
+                is_visited = random.choice([True, False])
+                visit = self.gene[i][1]
+                item = random.randint(1, 5)
+                new_gene[i] = (is_visited, visit, item)
         self.gene = new_gene
-    
-    def shave_gene(self, shave_ratio = 0.2):
-        """
-        ランダムに遺伝子の要素を削除する
-        """
-        if random.random() <= shave_ratio:
-            half_size = len(self.gene) // 2
-            self.gene = random.sample(self.gene, half_size)
-
-        

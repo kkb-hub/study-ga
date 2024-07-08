@@ -1,4 +1,7 @@
 import random
+import math
+
+import numpy as np
 
 from kp_tsp.environment_models import Location
 from .individual import Individual
@@ -20,8 +23,16 @@ class Population:
         個体群を初期化
         """
         self.individuals: population_type = [Individual(max_place) for _ in range(size)]
+    
+    def calculate_mean(self, data: list):
+        return sum(data) / len(data)
 
-    def evaluate(self, locations: list[Location], max_weight: int):
+    def calculate_std(self, data):
+        mean = self.calculate_mean(data)
+        variance = sum((x - mean) ** 2 for x in data) / len(data)  # 母集団標準偏差の場合
+        return math.sqrt(variance)
+
+    def evaluate(self, locations: list[Location]):
         """
         適応度計算を各個体に行わせる
 
@@ -29,11 +40,28 @@ class Population:
         ----------
         location : list[Locations]
             拠点数
-        max_weigth : int
-            ナップサックの許容値
         """
-        for individual in self.individuals:
-            individual.evaluate_fitness(locations, max_weight)
+
+        for ind in self.individuals:
+            ind.calc_total(locations)
+        
+        total_distances = [ind.total_dist for ind in self.individuals]
+        total_weights = [ind.total_weight for ind in self.individuals]
+        total_values_inverse = [1/ind.total_value for ind in self.individuals]
+        
+        mean_distances = self.calculate_mean(total_distances)
+        mean_weights = self.calculate_mean(total_weights)
+        mean_value_inverse = self.calculate_mean(total_values_inverse)
+
+        std_distances = self.calculate_std(total_distances)
+        std_weights = self.calculate_std(total_weights)
+        std_value_inverse = self.calculate_std(total_values_inverse)
+
+        for ind in self.individuals:
+            ind.normalized_dist = (ind.total_dist - mean_distances) / std_distances
+            ind.normalized_weight = (ind.total_weight - mean_weights) / std_weights
+            ind.normalized_value = (1/ind.total_value - mean_value_inverse) / std_value_inverse
+            ind.fitness = max(ind.normalized_dist, ind.normalized_weight, ind.normalized_value)
     
     def select(self):
         """
@@ -48,6 +76,8 @@ class Population:
 
     def crossover(self, parent1: Individual, parent2: Individual)->Individual:
         """
+        再定義すること
+        
         一様交叉
         
         : praram parent1: 交叉での親1
@@ -57,7 +87,6 @@ class Population:
         """
         交叉関数
         今回は一様交叉
-        https://chatgpt.com/share/1f369666-fe20-4f75-bd92-423cb9990011
 
         Parameters
         ----------
@@ -74,20 +103,20 @@ class Population:
         child = Individual()
 
         # 最短の親を基準に選択
-        min_length = min(len(parent1.gene), len(parent2.gene))
-        for i in range(min_length):
-            if random.random() < 0.5:
-                child.gene.append(parent1.gene[i])
-            else:
-                child.gene.append(parent2.gene[i])
+        # min_length = min(len(parent1.gene), len(parent2.gene))
+        # for i in range(min_length):
+        #     if random.random() < 0.5:
+        #         child.gene.append(parent1.gene[i])
+        #     else:
+        #         child.gene.append(parent2.gene[i])
 
-        # 残りの遺伝子を長い親から受け継ぐ
-        # ただし、1/2の確率とする。確率を決めないと遺伝子が無限に伸びるため。
-        if random.random() < 0.01:
-            if len(parent1.gene) > min_length:
-                child.gene.extend(parent1.gene[min_length:])
-            elif len(parent2.gene) > min_length:
-                child.gene.extend(parent2.gene[min_length:])
+        # # 残りの遺伝子を長い親から受け継ぐ
+        # # ただし、1/2の確率とする。確率を決めないと遺伝子が無限に伸びるため。
+        # if random.random() < 0.5:
+        #     if len(parent1.gene) > min_length:
+        #         child.gene.extend(parent1.gene[min_length:])
+        #     elif len(parent2.gene) > min_length:
+        #         child.gene.extend(parent2.gene[min_length:])
                 
         return child
     
@@ -102,7 +131,6 @@ class Population:
         """
         for individual in self.individuals:
             individual.mutate(mutation_rate)
-            individual.shave_gene()
 
     def generate_new_population(self, crossover_rate):
         """
