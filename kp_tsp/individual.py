@@ -34,7 +34,7 @@ class Individual:
 
         self.fitness: float = 0
         self.total_dist: float = 0
-        self.total_value: int = 0
+        self.total_value_inverse: float = 0
         self.total_weight: int = 0
 
         self.normalized_dist: float = 0
@@ -55,8 +55,7 @@ class Individual:
         遺伝子 : gene_type
             初期化された遺伝子
         """
-        # 1からnum_placeまでの範囲で重複のないランダムな数字を生成
-        visit = random.sample(range(1, num_place + 1), num_place)
+        visit = list(range(1, num_place + 1))
 
         # 1から5までのランダムな数字を生成
         item = [random.randint(1, 5) for _ in range(num_place)]
@@ -102,9 +101,13 @@ class Individual:
                 current_position = location.coordinates
 
         # 適応度の計算。価値を最大化し、距離を最小化したいので、価値を距離で割る
-        if total_distance > 0 and total_value > 0:
+        if total_value > 0:
             self.total_dist = total_distance
-            self.total_value = total_value
+            self.total_value_inverse = 1/total_value
+            self.total_weight = total_weight
+        else:
+            self.total_dist = total_distance
+            self.total_value_inverse = 100000000
             self.total_weight = total_weight
 
     def mutate(self, mutation_rate: float):
