@@ -10,7 +10,7 @@ if __name__ == '__main__':
             items=[Item(id=i, weight=random.randint(1, 10), 
                     value=random.randint(1, 10)) for i in range(1, 6)], 
             coordinates=(random.randint(0, 1000), random.randint(0, 1000))
-        ) for i in range(1, 11)
+        ) for i in range(1, 100)
     ]
 
     # 既存のLocationリストに対してItemのIDを1~5に再割り当て
@@ -25,4 +25,4 @@ if __name__ == '__main__':
 
     from .genetic_algorithm import GeneticAlgorithm
     ins = GeneticAlgorithm(5000, num_locations, 1000)
-    ins.run(location_list, 20)
+    ins.run(location_list)
